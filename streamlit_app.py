@@ -5,7 +5,7 @@ import google.generativeai as genai
 import streamlit as st
 
 st.set_page_config(page_title="Academia Óptica", page_icon="👓")
-MODEL = "gemini-2.5-flash"  # cambiar si querés otro modelo de Gemini
+MODEL = "gemini-1.5-flash"  # cambiar si querés otro modelo de Gemini
 
 # ---------- Acceso protegido ----------
 if not st.session_state.get("ok"):
