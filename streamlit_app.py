@@ -85,7 +85,7 @@ def receta_txt(c):
 
 def llamar(system, history, texto, json_mode=False):
     cfg = {"response_mime_type": "application/json"} if json_mode else None
-    m = genai.GenerativeModel(MODEL, system_instruction=system, generation_config=cfg)
+  m = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system, generation_config=cfg)
     return m.start_chat(history=history).send_message(texto).text
 
 
