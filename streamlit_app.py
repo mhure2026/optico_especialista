@@ -12,11 +12,11 @@ st.write(
     "Entrenamiento integral para ópticos recién graduados: teoría, taller, morfología y ventas."
 )
 
-# Inicializar el cliente de Google GenAI
-# (Asegurate de tener tu API Key configurada en las variables de entorno o ponela aquí para probar)
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+# Inicializar el cliente de Google GenAI usando la clave secreta del sistema
+api_key = os.environ.get("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key)
 
-# System Instructions que ya diseñamos
+# System Instructions con los 4 módulos
 system_instruction = """PROMPTING SYSTEM: Capacitador y Simulador de Óptica Técnica y Comercial
 
 ROL Y OBJETIVO GENERAL:
@@ -28,7 +28,7 @@ MÓDULO 2: Asesoría Morfológica, Armazón e Índice de Refracción
 MÓDULO 3: Tipos de Cristales y Recomendación de Producto
 MÓDULO 4: Simulador Infinito de Pacientes (Roleplay de Ventas)
 
-Mantiene un tono pedagógico, profesional y dinámico."""
+Mantiene un tono pedagógico, profesional, dinámico y muy claro."""
 
 # Pestañas de la interfaz basadas en tus módulos
 tab1, tab2, tab3, tab4 = st.tabs(
@@ -45,13 +45,16 @@ def consultar_ia(prompt_usuario, modulo_seleccionado):
   with st.spinner("El capacitador IA está analizando tu consulta..."):
     try:
       response = client.models.generate_content(
-          model="gemini-2.5-flash",  # O el modelo que prefieras
+          model="gemini-2.5-flash",
           contents=f"[{modulo_seleccionado}] {prompt_usuario}",
           config={"system_instruction": system_instruction},
       )
       return response.text
     except Exception as e:
-      return f"Error al conectar con la IA: {e}"
+      return (
+          "Error al conectar con la IA. Asegúrate de haber configurado tu"
+          f" GEMINI_API_KEY correctamente. Detalle: {e}"
+      )
 
 
 with tab1:
@@ -79,8 +82,8 @@ with tab2:
       "Escribe tu consulta de taller y armazones:",
       key="q2",
       placeholder=(
-          "Ej: ¿Qué espesor bordes tendrá una miopía de -6.00 en un armazón"
-          " redondo de 50mm?"
+          "Ej: ¿Qué espesor de borde tendrá una miopía de -6.00 en un armazón"
+          " de 50mm?"
       ),
   )
   if st.button("Consultar Módulo 2"):
@@ -111,7 +114,6 @@ with tab4:
   if "historial_chat" not in st.session_state:
     st.session_state.historial_chat = []
 
-  # Iniciar simulación
   if st.button("Generar nuevo paciente aleatorio"):
     prompt_inicial = (
         "Inicia una simulación del Módulo 4. Genera un paciente aleatorio con"
@@ -121,7 +123,6 @@ with tab4:
     respuesta = consultar_ia(prompt_inicial, "MÓDULO 4")
     st.session_state.historial_chat = [("Paciente", respuesta)]
 
-  # Mostrar chat del simulador
   for remitente, texto in st.session_state.historial_chat:
     with st.chat_message(remitente):
       st.markdown(texto)
@@ -132,7 +133,6 @@ with tab4:
     with st.chat_message("Óptico"):
       st.markdown(respuesta_usuario)
 
-    # Respuesta del paciente IA
     prompt_continuacion = f"El óptico respondió: {respuesta_usuario}. Sigue interpretando al paciente, reacciona a su venta y dale feedback si corresponde."
     respuesta_paciente = consultar_ia(prompt_continuacion, "MÓDULO 4")
     st.session_state.historial_chat.append(("Paciente", respuesta_paciente))
