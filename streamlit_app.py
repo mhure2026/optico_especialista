@@ -84,11 +84,18 @@ def receta_txt(c):
 
 
 def llamar(system, history, texto, json_mode=False):
-    # Configuramos el modelo base con el nombre exacto
+    cfg = {"response_mime_type": "application/json"} if json_mode else None
+    
+    # Creamos el modelo con el nombre exacto que nos dio la lista
     m = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction=system
+        model_name="models/gemini-2.5-flash",
+        system_instruction=system,
+        generation_config=cfg
     )
+    
+    # Usamos generación directa para evitar errores de historial
+    response = m.generate_content(texto)
+    return response.text
     chat = m.start_chat(history=history if history else [])
     response = chat.send_message(texto)
     return response.text
