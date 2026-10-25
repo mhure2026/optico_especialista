@@ -7,13 +7,30 @@ st.set_page_config(
     page_title="Capacitador Óptico IA", page_icon="👓", layout="wide"
 )
 
+# Control de acceso por contraseña
+st.title("🔐 Acceso a la Plataforma")
+password_ingresada = st.text_input(
+    "Ingresa la contraseña de la aplicación:", type="password"
+)
+
+# Obtener la contraseña desde los Secrets de Streamlit o variables de entorno
+password_secreta = st.secrets.get(
+    "APP_PASSWORD", os.environ.get("APP_PASSWORD", "Infinito2026")
+)
+
+if password_ingresada != password_secreta:
+  st.warning("Por favor, ingresa la contraseña correcta para continuar.")
+  st.stop()  # Detiene la ejecución hasta que se ponga la contraseña correcta
+
+# --- CONTENIDO DE LA APLICACIÓN (SÓLO SE MUESTRA SI LA CONTRASEÑA ES CORRECTA) ---
 st.title("👓 Plataforma de Capacitación y Simulador Óptico")
 st.write(
-    "Entrenamiento integral para ópticos recién graduados: teoría, taller, morfología y ventas."
+    "Entrenamiento integral para ópticos recién graduados: teoría, taller,"
+    " morfología y ventas."
 )
 
 # Inicializar el cliente de Google GenAI usando la clave secreta del sistema
-api_key = os.environ.get("GEMINI_API_KEY")
+api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY"))
 client = genai.Client(api_key=api_key)
 
 # System Instructions con los 4 módulos
