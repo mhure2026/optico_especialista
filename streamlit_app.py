@@ -8,31 +8,47 @@ st.set_page_config(
 )
 
 # --- CONTROL DE ACCESO ---
-st.title("🔐 Acceso a la Plataforma - Capacitador Óptico")
-password_ingresada = st.text_input(
-    "Ingresa la contraseña de la aplicación:", type="password"
-)
+if "autenticado" not in st.session_state:
+  st.session_state.autenticado = False
 
-# Obtener la contraseña desde los Secrets de Streamlit
-password_secreta = st.secrets.get("APP_PASSWORD", "Infinito2026")
-
-# Validar contraseña: si no coincide, frena y no muestra nada más
-if password_ingresada != password_secreta:
-  st.warning(
-      "🔒 Por favor, ingresa la contraseña correcta para desbloquear la"
-      " aplicación."
+if not st.session_state.autenticado:
+  st.title("🔐 Acceso a la Plataforma - Capacitador Óptico")
+  password_ingresada = st.text_input(
+      "Ingresa la contraseña de la aplicación:", type="password"
   )
+  password_secreta = st.secrets.get("APP_PASSWORD", "Infinito2026")
+
+  if password_ingresada == password_secreta:
+    st.session_state.autenticado = True
+    st.rerun()
+  elif password_ingresada:
+    st.error("Contraseña incorrecta.")
   st.stop()
 
-# --- SÓLO SE MUESTRA SI LA CONTRASEÑA ES CORRECTA ---
-st.success("¡Acceso concedido con éxito!")
-st.title("👓 Plataforma de Capacitación y Simulador Óptico")
-st.write(
-    "Entrenamiento integral para ópticos recién graduados: teoría, taller,"
-    " morfología y ventas."
+# --- APLICACIÓN PRINCIPAL (UNA VEZ AUTENTICADO) ---
+
+# Menú lateral para elegir el módulo (¡Adiós a subir y bajar la pantalla!)
+st.sidebar.title("📚 Módulos de Capacitación")
+modulo_seleccionado = st.sidebar.selectbox(
+    "Selecciona el área de entrenamiento:",
+    [
+        "1. Lectura e Inversión de Recetas",
+        "2. Morfología y Espesores",
+        "3. Tipos de Cristales y Tratamientos",
+        "4. Simulador Infinito de Pacientes (Roleplay)",
+    ],
 )
 
-# Inicializar el cliente de Google GenAI
+st.sidebar.markdown("---")
+st.sidebar.info(
+    "💡 **Tip:** Escribe tu consulta abajo en el chat. La caja de escritura"
+    " siempre se queda fija al pie de la página para mayor comodidad."
+)
+
+# Título dinámico según el módulo
+st.title("👓 Plataforma de Capacitación y Simulador Óptico")
+
+# Inicializar cliente de IA
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY"))
 client = genai.Client(api_key=api_key)
 
@@ -50,112 +66,97 @@ MÓDULO 4: Simulador Infinito de Pacientes (Roleplay de Ventas)
 
 Mantiene un tono pedagógico, profesional, dinámico y muy claro."""
 
-# Pestañas de la interfaz basadas en tus módulos
-tab1, tab2, tab3, tab4 = st.tabs(
-    [
-        "1. Recetas y Transposición",
-        "2. Morfología y Espesores",
-        "3. Tipos y Cristales",
-        "4. Simulador de Pacientes",
-    ]
-)
-
-
-def consultar_ia(prompt_usuario, modulo_seleccionado):
-  with st.spinner("El capacitador IA está analizando tu consulta..."):
-    try:
-      # Actualizado al modelo correcto requerido por la API
-      response = client.models.generate_content(
-          model="gemini-3.8-flash",
-          contents=f"[{modulo_seleccionado}] {prompt_usuario}",
-          config={"system_instruction": system_instruction},
-      )
-      return response.text
-    except Exception as e:
-      return (
-          "Error al conectar con la IA. Verifica tu GEMINI_API_KEY en los"
-          f" Secrets. Detalle: {e}"
-      )
-
-
-with tab1:
-  st.header("Módulo 1: Lectura e Inversión de Recetas")
-  st.write(
-      "Practicá cilindros positivos, negativos, bicilíndricas y representación"
-      " en cruz."
-  )
-  pregunta_m1 = st.text_area(
-      "Escribe tu caso o duda de receta:",
-      key="q1",
-      placeholder="Ej: ¿Cómo transpongo +2.00 -1.50 x 90?",
-  )
-  if st.button("Consultar Módulo 1"):
-    if pregunta_m1:
-      st.markdown(consultar_ia(pregunta_m1, "MÓDULO 1"))
-
-with tab2:
-  st.header("Módulo 2: Morfología, Armazón e Índice de Refracción")
-  st.write(
-      "Calculá espesores según calibre, DNP, altura y morfología facial (puente"
-      " y patillas)."
-  )
-  pregunta_m2 = st.text_area(
-      "Escribe tu consulta de taller y armazones:",
-      key="q2",
-      placeholder=(
-          "Ej: ¿Qué espesor de borde tendrá una miopía de -6.00 en un armazón"
-          " de 50mm?"
+# Manejo de historiales de chat independientes por cada módulo para que no se mezcle nada
+if "mensajes_m1" not in st.session_state:
+  st.session_state.mensajes_m1 = [{
+      "role": "assistant",
+      "content": (
+          "¡Hola! Estás en el **Módulo 1**. Pregúntame sobre transposición de"
+          " cilindros, fórmulas bicilíndricas o representación en cruz"
+          " astigmática."
       ),
-  )
-  if st.button("Consultar Módulo 2"):
-    if pregunta_m2:
-      st.markdown(consultar_ia(pregunta_m2, "MÓDULO 2"))
-
-with tab3:
-  st.header("Módulo 3: Tipos de Cristales y Recomendación")
-  st.write("Diferencia stock vs. laboratorio y elegí los mejores tratamientos.")
-  pregunta_m3 = st.text_area(
-      "Escribe tu duda sobre cristales:",
-      key="q3",
-      placeholder=(
-          "Ej: ¿Cuándo conviene un multifocal tallado digital versus uno"
-          " estándar?"
+  }]
+if "mensajes_m2" not in st.session_state:
+  st.session_state.mensajes_m2 = [{
+      "role": "assistant",
+      "content": (
+          "¡Hola! Estás en el **Módulo 2**. Consúltame sobre espesores de"
+          " cristales, índices de refracción, calibres y adaptación"
+          " morfológica (puente, patillas, DNP)."
       ),
+  }]
+if "mensajes_m3" not in st.session_state:
+  st.session_state.mensajes_m3 = [{
+      "role": "assistant",
+      "content": (
+          "¡Hola! Estás en el **Módulo 3**. Aquí vemos la diferencia entre stock"
+          " y laboratorio, familias de lentes y recomendación de"
+          " tratamientos."
+      ),
+  }]
+if "mensajes_m4" not in st.session_state:
+  st.session_state.mensajes_m4 = [{
+      "role": "assistant",
+      "content": (
+          "¡Hola! Estás en el **Módulo 4 (Gimnasio de Mostrador)**. Escribe"
+          " 'Iniciar simulación' para que genere un paciente aleatorio con"
+          " receta, presupuesto y personalidad."
+      ),
+  }]
+
+# Mapear el historial activo según el módulo elegido en la barra lateral
+if "1." in modulo_seleccionado:
+  historial_activo = st.session_state.mensasis_activo = (
+      st.session_state.mensajes_m1
   )
-  if st.button("Consultar Módulo 3"):
-    if pregunta_m3:
-      st.markdown(consultar_ia(pregunta_m3, "MÓDULO 3"))
+  tag_modulo = "MÓDULO 1"
+  st.subheader("📌 Módulo 1: Lectura e Inversión de Recetas")
+elif "2." in modulo_seleccionado:
+  historial_activo = st.session_state.mensajes_m2
+  tag_modulo = "MÓDULO 2"
+  st.subheader("📌 Módulo 2: Morfología, Armazón e Índice de Refracción")
+elif "3." in modulo_seleccionado:
+  historial_activo = st.session_state.mensajes_m3
+  tag_modulo = "MÓDULO 3"
+  st.subheader("📌 Módulo 3: Tipos de Cristales y Recomendación de Producto")
+else:
+  historial_activo = st.session_state.mensajes_m4
+  tag_modulo = "MÓDULO 4"
+  st.subheader("📌 Módulo 4: Simulador Infinito de Pacientes (Roleplay)")
 
-with tab4:
-  st.header("Módulo 4: Simulador Infinito de Pacientes (Roleplay)")
-  st.write(
-      "Entrená el cierre de venta interactuando con un paciente generado por"
-      " IA."
-  )
-  if "historial_chat" not in st.session_state:
-    st.session_state.historial_chat = []
+# Mostrar el historial de la conversación actual
+for mensaje in historial_activo:
+  with st.chat_message(mensaje["role"]):
+    st.markdown(mensaje["content"])
 
-  if st.button("Generar nuevo paciente aleatorio"):
-    prompt_inicial = (
-        "Inicia una simulación del Módulo 4. Genera un paciente aleatorio con"
-        " receta, presupuesto y personalidad, y preséntate en el mostrador"
-        " pidiendo asesoramiento."
-    )
-    respuesta = consultar_ia(prompt_inicial, "MÓDULO 4")
-    st.session_state.historial_chat = [("Paciente", respuesta)]
+# --- CAJA DE TEXTO FIJA ABAJO (STREAMLIT CHAT INPUT) ---
+# Esta caja NUNCA se mueve de abajo, solucionando tu problema de desplazamiento.
+if prompt_usuario := st.chat_input(
+    "Escribe tu consulta o respuesta aquí..."
+):
+  # Agregar mensaje del usuario al historial activo
+  historial_activo.append({"role": "user", "content": prompt_usuario})
+  with st.chat_message("user"):
+    st.markdown(prompt_usuario)
 
-  for remitente, texto in st.session_state.historial_chat:
-    with st.chat_message(remitente):
-      st.markdown(texto)
+  # Generar respuesta de la IA
+  with st.chat_message("assistant"):
+    with st.spinner("El capacitador IA está analizando tu caso..."):
+      try:
+        # Construir historial para contexto fluido
+        contenido_prompt = f"[{tag_modulo}] {prompt_usuario}"
 
-  respuesta_usuario = st.chat_input("Responde al paciente como óptico...")
-  if respuesta_usuario:
-    st.session_state.historial_chat.append(("Óptico", respuesta_usuario))
-    with st.chat_message("Óptico"):
-      st.markdown(respuesta_usuario)
+        response = client.models.generate_content(
+            model="gemini-3.8-flash",
+            contents=contenido_prompt,
+            config={"system_instruction": system_instruction},
+        )
+        respuesta_ia = response.text
+      except Exception as e:
+        respuesta_ia = (
+            "Error al conectar con la IA. Verifica tu clave en los Secrets."
+            f" Detalle: {e}"
+        )
 
-    prompt_continuacion = f"El óptico respondió: {respuesta_usuario}. Sigue interpretando al paciente, reacciona a su venta y dale feedback si corresponde."
-    respuesta_paciente = consultar_ia(prompt_continuacion, "MÓDULO 4")
-    st.session_state.historial_chat.append(("Paciente", respuesta_paciente))
-    with st.chat_message("Paciente"):
-      st.markdown(respuesta_paciente)
+      st.markdown(respuesta_ia)
+      historial_activo.append({"role": "assistant", "content": respuesta_ia})
