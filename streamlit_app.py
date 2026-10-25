@@ -64,9 +64,9 @@ tab1, tab2, tab3, tab4 = st.tabs(
 def consultar_ia(prompt_usuario, modulo_seleccionado):
   with st.spinner("El capacitador IA está analizando tu consulta..."):
     try:
-      # Actualizado al modelo correcto de Flash
+      # Actualizado al modelo correcto requerido por la API
       response = client.models.generate_content(
-          model="gemini-2.0-flash",
+          model="gemini-3.8-flash",
           contents=f"[{modulo_seleccionado}] {prompt_usuario}",
           config={"system_instruction": system_instruction},
       )
