@@ -16,6 +16,7 @@ if not st.session_state.get("ok"):
     st.stop()
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+st.write([m.name for m in genai.list_models() if "generateContent" in m.supported_generation_methods])
 
 REGLAS = (
     "REGLAS ABSOLUTAS: nunca nombres marcas comerciales ni precios. "
