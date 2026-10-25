@@ -7,29 +7,32 @@ st.set_page_config(
     page_title="Capacitador Óptico IA", page_icon="👓", layout="wide"
 )
 
-# Control de acceso por contraseña
-st.title("🔐 Acceso a la Plataforma")
+# --- CONTROL DE ACCESO ---
+st.title("🔐 Acceso a la Plataforma - Capacitador Óptico")
 password_ingresada = st.text_input(
     "Ingresa la contraseña de la aplicación:", type="password"
 )
 
-# Obtener la contraseña desde los Secrets de Streamlit o variables de entorno
-password_secreta = st.secrets.get(
-    "APP_PASSWORD", os.environ.get("APP_PASSWORD", "Infinito2026")
-)
+# Obtener la contraseña desde los Secrets de Streamlit
+password_secreta = st.secrets.get("APP_PASSWORD", "Infinito2026")
 
+# Validar contraseña: si no coincide, frena y no muestra nada más
 if password_ingresada != password_secreta:
-  st.warning("Por favor, ingresa la contraseña correcta para continuar.")
-  st.stop()  # Detiene la ejecución hasta que se ponga la contraseña correcta
+  st.warning(
+      "🔒 Por favor, ingresa la contraseña correcta para desbloquear la"
+      " aplicación."
+  )
+  st.stop()
 
-# --- CONTENIDO DE LA APLICACIÓN (SÓLO SE MUESTRA SI LA CONTRASEÑA ES CORRECTA) ---
+# --- SÓLO SE MUESTRA SI LA CONTRASEÑA ES CORRECTA ---
+st.success("¡Acceso concedido con éxito!")
 st.title("👓 Plataforma de Capacitación y Simulador Óptico")
 st.write(
     "Entrenamiento integral para ópticos recién graduados: teoría, taller,"
     " morfología y ventas."
 )
 
-# Inicializar el cliente de Google GenAI usando la clave secreta del sistema
+# Inicializar el cliente de Google GenAI
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY"))
 client = genai.Client(api_key=api_key)
 
@@ -69,8 +72,8 @@ def consultar_ia(prompt_usuario, modulo_seleccionado):
       return response.text
     except Exception as e:
       return (
-          "Error al conectar con la IA. Asegúrate de haber configurado tu"
-          f" GEMINI_API_KEY correctamente. Detalle: {e}"
+          "Error al conectar con la IA. Verifica tu GEMINI_API_KEY en los"
+          f" Secrets. Detalle: {e}"
       )
 
 
